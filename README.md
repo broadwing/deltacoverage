@@ -1,7 +1,7 @@
 # deltacoverage
 Go package to provide delta coverage between your tests.
 
-# Example
+## Example
 
 Go project [bench](https://github.com/thiagonache/bench).
 
@@ -9,9 +9,10 @@ Go project [bench](https://github.com/thiagonache/bench).
 $ deltacoverage TestNonOKStatusRecordedAsFailure
 TestNonOKStatusRecordedAsFailure 1.1%
 ```
+
 The test `TestNonOKStatusRecordedAsFailure` contributes to exclusive 1.1% of the total coverage.
 
-# Motivation
+## Motivation
 
 ```text
 Herb Derby came up with this metric of “delta coverage”. 
@@ -21,9 +22,10 @@ ability to exercise parts of the system, then you should delete those tests, unl
 communication purpose.
 —Kent Beck, “Is TDD Dead?”
 ```
+
 Thank you @bitfield for the suggestion.
 
-# Roadmap
+## Roadmap
 
 - POC (WIP)
 - Brute force implementation using `go test` commands
