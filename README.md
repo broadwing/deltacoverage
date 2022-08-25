@@ -9,6 +9,7 @@ Go project [bench](https://github.com/thiagonache/bench).
 $ deltacoverage TestNonOKStatusRecordedAsFailure
 TestNonOKStatusRecordedAsFailure 1.1%
 ```
+The test `TestNonOKStatusRecordedAsFailure` contributes to exclusive 1.1% of the total coverage.
 
 # Motivation
 
