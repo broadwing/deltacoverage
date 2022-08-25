@@ -120,8 +120,11 @@ func getCoverageTest(testName string, allTests []string) (float64, error) {
 }
 
 // parseCoverageResult returns a non-negative value represeting the code coverage
-// in the output result. This logic assumes that total coverage comes after
-// normal coverage
+// in the output result.
+// It's set a negative number meaning that a coverage is not found yet, read
+// the content set the value of coverage as the value of the normal or the total
+// coverage is found. This logic assumes that total coverage comes after
+// normal coverage as it is in Go 1.19 because we want the total if availabe.
 func parseCoverageResult(r io.Reader) (float64, error) {
 	scanner := bufio.NewScanner(r)
 	var err error
