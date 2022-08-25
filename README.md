@@ -1,6 +1,16 @@
 # deltacoverage
 Go package to provide delta coverage between your tests.
 
+# Example
+
+Go project [bench](https://github.com/thiagonache/bench).
+
+```shell
+$ deltacoverage TestNonOKStatusRecordedAsFailure
+TestNonOKStatusRecordedAsFailure 1.1%
+```
+The test `TestNonOKStatusRecordedAsFailure` contributes to exclusive 1.1% of the total coverage.
+
 # Motivation
 
 ```text
@@ -15,6 +25,7 @@ Thank you @bitfield for the suggestion.
 
 # Roadmap
 
+- POC (WIP)
 - Brute force implementation using `go test` commands
 - Borrow `cover.go` code and create `deltagecoverage.go`
 - (Dream) Implement as Go CLI feature.
