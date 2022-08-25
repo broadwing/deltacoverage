@@ -11,7 +11,7 @@ import (
 
 func TestParseCoverageResultErrorsIfGivenNoTests(t *testing.T) {
 	t.Parallel()
-	_, err := ParseCoverageResult(strings.NewReader(`?       my_not_cool_project    [no test files]`))
+	_, err := parseCoverageResult(strings.NewReader(`?       my_not_cool_project    [no test files]`))
 	if err == nil {
 		t.Error("want error but not found")
 	}
@@ -20,7 +20,7 @@ func TestParseCoverageResultErrorsIfGivenNoTests(t *testing.T) {
 func TestParseCoverageResultReturnsCorrectValueGivenTestScriptTestCoverResult(t *testing.T) {
 	t.Parallel()
 	want := 34.8
-	got, err := ParseCoverageResult(strings.NewReader(`FAIL
+	got, err := parseCoverageResult(strings.NewReader(`FAIL
 coverage: 20.2% of statements
 total coverage: 34.8% of statements
 exit status 1
@@ -36,7 +36,7 @@ FAIL    github.com/thiagonache/deltacoverage    0.832s`))
 func TestParseCoverageResultReturnsCorrectValueGivenNoTestScriptsTestCoverResult(t *testing.T) {
 	t.Parallel()
 	want := 16.3
-	got, err := ParseCoverageResult(strings.NewReader(`PASS
+	got, err := parseCoverageResult(strings.NewReader(`PASS
 coverage: 16.3% of statements
 ok      github.com/thiagonache/deltacoverage    0.012s`))
 	if err != nil {
@@ -49,7 +49,7 @@ ok      github.com/thiagonache/deltacoverage    0.012s`))
 
 func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 	t.Parallel()
-	got, err := ParseTestList(strings.NewReader(`?       my_not_cool_project    [no test files]`))
+	got, err := parseTestList(strings.NewReader(`?       my_not_cool_project    [no test files]`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 func TestParseTestListReturnsCorrectValuesGivenTestListResult(t *testing.T) {
 	t.Parallel()
 	want := []string{"TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult", "TestParseTestListErrorsIfNoTestsFound"}
-	got, err := ParseTestList(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
+	got, err := parseTestList(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
 TestParseTestListErrorsIfNoTestsFound
 ok      github.com/thiagonache/deltacoverage    0.004s`))
 	if err != nil {

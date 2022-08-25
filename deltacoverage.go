@@ -11,23 +11,26 @@ import (
 	"strings"
 )
 
+// Main runs and returns an exit code
+// If succeed, it will print to stdout the delta coverage of a function given as first argument and return zero
+// If error, it will print to stdderr and return non zero
 func Main() int {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Please, inform a test name")
 		return 1
 	}
 	testName := os.Args[1]
-	coverage, err := GetFullCoverage()
+	coverage, err := getFullCoverage()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	tests, err := GetTestList()
+	tests, err := getTestList()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	testCoverage, err := GetTestCoverage(testName, tests)
+	testCoverage, err := getTestCoverage(testName, tests)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -36,7 +39,7 @@ func Main() int {
 	return 0
 }
 
-func GetTestList() ([]string, error) {
+func getTestList() ([]string, error) {
 	cmd := exec.Command("go", "test", "-list", ".")
 	cmd.Stderr = os.Stderr
 	goTestList, err := cmd.StdoutPipe()
@@ -47,7 +50,7 @@ func GetTestList() ([]string, error) {
 		fmt.Printf("Err starting cmd: %+v\n", err)
 		return []string{}, err
 	}
-	tests, err := ParseTestList(goTestList)
+	tests, err := parseTestList(goTestList)
 	if err != nil {
 		fmt.Printf("Err running ParseTestList: %+v\n", err)
 		return []string{}, err
@@ -59,7 +62,7 @@ func GetTestList() ([]string, error) {
 	return tests, nil
 }
 
-func GetFullCoverage() (float64, error) {
+func getFullCoverage() (float64, error) {
 	cmd := exec.Command("go", "test", "-coverprofile", "/dev/null")
 	cmd.Stderr = os.Stderr
 	goTestCover, err := cmd.StdoutPipe()
@@ -70,7 +73,7 @@ func GetFullCoverage() (float64, error) {
 		fmt.Printf("Err starting cmd: %+v\n", err)
 		return 0, err
 	}
-	coverage, err := ParseCoverageResult(goTestCover)
+	coverage, err := parseCoverageResult(goTestCover)
 	if err != nil {
 		fmt.Printf("Err running ParseCoverageResult: %+v\n", err)
 		return 0, err
@@ -82,7 +85,7 @@ func GetFullCoverage() (float64, error) {
 	return coverage, nil
 }
 
-func GetTestCoverage(testName string, allTests []string) (float64, error) {
+func getTestCoverage(testName string, allTests []string) (float64, error) {
 	tests := []string{}
 	for _, test := range allTests {
 		if test == testName {
@@ -100,7 +103,7 @@ func GetTestCoverage(testName string, allTests []string) (float64, error) {
 		fmt.Printf("Err starting cmd: %+v\n", err)
 		return 0, err
 	}
-	coverage, err := ParseCoverageResult(goTestCover)
+	coverage, err := parseCoverageResult(goTestCover)
 	if err != nil {
 		fmt.Printf("Err running ParseCoverageResult: %+v\n", err)
 		return 0, err
@@ -112,10 +115,10 @@ func GetTestCoverage(testName string, allTests []string) (float64, error) {
 	return coverage, nil
 }
 
-// ParseCoverageResult returns a non-negative value represeting the code coverage
+// parseCoverageResult returns a non-negative value represeting the code coverage
 // in the output result. This logic assumes that total coverage comes after
 // normal coverage
-func ParseCoverageResult(r io.Reader) (float64, error) {
+func parseCoverageResult(r io.Reader) (float64, error) {
 	scanner := bufio.NewScanner(r)
 	var err error
 	coverage := -1.0
@@ -143,7 +146,7 @@ func ParseCoverageResult(r io.Reader) (float64, error) {
 	return coverage, nil
 }
 
-func ParseTestList(r io.Reader) ([]string, error) {
+func parseTestList(r io.Reader) ([]string, error) {
 	scanner := bufio.NewScanner(r)
 	testsNames := []string{}
 	for scanner.Scan() {
