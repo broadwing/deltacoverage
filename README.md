@@ -15,6 +15,7 @@ Thank you @bitfield for the suggestion.
 
 # Roadmap
 
+- POC (WIP)
 - Brute force implementation using `go test` commands
 - Borrow `cover.go` code and create `deltagecoverage.go`
 - (Dream) Implement as Go CLI feature.
