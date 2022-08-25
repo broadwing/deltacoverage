@@ -1,0 +1,2 @@
+! exec deltacoverage
+stderr 'Please, inform a test name'
