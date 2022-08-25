@@ -97,7 +97,7 @@ func getCoverageTest(testName string, allTests []string) (float64, error) {
 		}
 		tests = append(tests, fmt.Sprintf("^%s$", test))
 	}
-	cmd := exec.Command("go", "test", "-coverprofile", "file.out", "-run", strings.Join(tests, "|"))
+	cmd := exec.Command("go", "test", "-coverprofile", "/dev/null", "-run", strings.Join(tests, "|"))
 	cmd.Stderr = os.Stderr
 	goTestCoverage, err := cmd.StdoutPipe()
 	if err != nil {
