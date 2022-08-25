@@ -49,7 +49,7 @@ ok      github.com/thiagonache/deltacoverage    0.012s`))
 
 func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 	t.Parallel()
-	got, err := parseTestList(strings.NewReader(`?       my_not_cool_project    [no test files]`))
+	got, err := parseListTests(strings.NewReader(`?       my_not_cool_project    [no test files]`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 func TestParseTestListReturnsCorrectValuesGivenTestListResult(t *testing.T) {
 	t.Parallel()
 	want := []string{"TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult", "TestParseTestListErrorsIfNoTestsFound"}
-	got, err := parseTestList(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
+	got, err := parseListTests(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
 TestParseTestListErrorsIfNoTestsFound
 ok      github.com/thiagonache/deltacoverage    0.004s`))
 	if err != nil {
