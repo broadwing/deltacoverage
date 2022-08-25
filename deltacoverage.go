@@ -138,9 +138,11 @@ func parseCoverageResult(r io.Reader) (float64, error) {
 				return 0, err
 			}
 		case "total":
-			coverage, err = strconv.ParseFloat(strings.ReplaceAll(items[2], "%", ""), 64)
-			if err != nil {
-				return 0, err
+			if items[1] == "coverage:" {
+				coverage, err = strconv.ParseFloat(strings.ReplaceAll(items[2], "%", ""), 64)
+				if err != nil {
+					return 0, err
+				}
 			}
 		}
 	}
