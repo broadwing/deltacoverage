@@ -15,15 +15,6 @@ import (
 // If succeed, it will print to stdout the delta coverage of a function given as first argument and return zero
 // If error, it will print to stdderr and return non zero
 func Main() int {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Please, inform a test name")
-		return 1
-	}
-	if os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Fprintf(os.Stderr, "Usage: %s TestFunctionName\n", os.Args[0])
-		return 1
-	}
-	testName := os.Args[1]
 	coverage, err := getCoverageAllTests()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -34,12 +25,21 @@ func Main() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	testCoverage, err := getCoverageTest(testName, tests)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
+	var runTests []string
+	args := os.Args[1:]
+	if len(args) == 0 {
+		runTests = tests
+	} else {
+		runTests = os.Args[1:]
 	}
-	fmt.Fprintf(os.Stdout, "%s %.1f%s\n", testName, coverage-testCoverage, "%")
+	for _, testName := range runTests {
+		testCoverage, err := getCoverageTest(testName, tests)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		fmt.Fprintf(os.Stdout, "%s %.1f%s\n", testName, coverage-testCoverage, "%")
+	}
 	return 0
 }
 

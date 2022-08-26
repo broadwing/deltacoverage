@@ -1,8 +1,0 @@
-! exec deltacoverage
-stderr 'Please, inform a test name'
-
-! exec deltacoverage -h
-stderr 'deltacoverage TestFunctionName'
-
-! exec deltacoverage --help
-stderr 'deltacoverage TestFunctionName'
