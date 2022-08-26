@@ -9,7 +9,7 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
-func TestParseCoverageResultErrorsIfGivenNoTests(t *testing.T) {
+func TestParseCoverageResult_ErrorsIfGivenNoTests(t *testing.T) {
 	t.Parallel()
 	_, err := parseCoverageResult(strings.NewReader(`?       my_not_cool_project    [no test files]`))
 	if err == nil {
@@ -17,7 +17,7 @@ func TestParseCoverageResultErrorsIfGivenNoTests(t *testing.T) {
 	}
 }
 
-func TestParseCoverageResultReturnsCorrectValueGivenTestScriptTestCoverResult(t *testing.T) {
+func TestParseCoverageResult_ReturnsCorrectValueGivenTestScriptTestCoverResult(t *testing.T) {
 	t.Parallel()
 	want := 34.8
 	got, err := parseCoverageResult(strings.NewReader(`FAIL
@@ -33,7 +33,7 @@ FAIL    github.com/thiagonache/deltacoverage    0.832s`))
 	}
 }
 
-func TestParseCoverageResultReturnsCorrectValueGivenNoTestScriptsTestCoverResult(t *testing.T) {
+func TestParseCoverageResult_ReturnsCorrectValueGivenNoTestScriptsTestCoverResult(t *testing.T) {
 	t.Parallel()
 	want := 16.3
 	got, err := parseCoverageResult(strings.NewReader(`PASS
@@ -47,7 +47,7 @@ ok      github.com/thiagonache/deltacoverage    0.012s`))
 	}
 }
 
-func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
+func TestParseListTests_ReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 	t.Parallel()
 	got, err := parseListTests(strings.NewReader(`?       my_not_cool_project    [no test files]`))
 	if err != nil {
@@ -58,7 +58,7 @@ func TestParseTestListReturnsZeroTestsIfGivenNoTests(t *testing.T) {
 	}
 }
 
-func TestParseTestListReturnsCorrectValuesGivenTestListResult(t *testing.T) {
+func TestParseListTests_ReturnsCorrectValuesGivenTestListResult(t *testing.T) {
 	t.Parallel()
 	want := []string{"TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult", "TestParseTestListErrorsIfNoTestsFound"}
 	got, err := parseListTests(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
@@ -76,7 +76,7 @@ func TestMain(m *testing.M) {
 	os.Exit(testscript.RunMain(m, map[string]func() int{"deltacoverage": Main}))
 }
 
-func TestScript(t *testing.T) {
+func TestTestScript_(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Dir: "testdata/scripts",
 	})
