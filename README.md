@@ -3,14 +3,18 @@ Go package to provide delta coverage between your tests.
 
 ## Example
 
-Go project [bench](https://github.com/thiagonache/bench).
-
 ```shell
-$ deltacoverage TestNonOKStatusRecordedAsFailure
-TestNonOKStatusRecordedAsFailure 1.1%
+$ deltacoverage
+TestParseCoverageResultErrorsIfGivenNoTests 1.0%
+TestParseCoverageResultReturnsCorrectValueGivenTestScriptTestCoverResult 3.0%
+TestParseCoverageResultReturnsCorrectValueGivenNoTestScriptsTestCoverResult 0.0%
+TestParseTestListReturnsZeroTestsIfGivenNoTests 0.0%
+TestParseTestListReturnsCorrectValuesGivenTestListResult 0.0%
+TestScript 45.0%
 ```
 
-The test `TestNonOKStatusRecordedAsFailure` contributes to exclusive 1.1% of the total coverage.
+The test `TestParseCoverageResultErrorsIfGivenNoTests` contributes to exclusive
+1.0% of the total coverage while `TestScript` is responsible for 45%.
 
 ## Motivation
 
@@ -27,7 +31,7 @@ Thank you @bitfield for the suggestion.
 
 ## Roadmap
 
-- POC (WIP)
-- Brute force implementation using `go test` commands
+- POC
+- Brute force implementation using `go test` commands (WIP)
 - Borrow `cover.go` code and create `deltagecoverage.go`
 - (Dream) Implement as Go CLI feature.
