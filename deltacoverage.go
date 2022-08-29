@@ -44,47 +44,43 @@ func Main() int {
 }
 
 func getListTests() ([]string, error) {
-	cmd := exec.Command("go", "test", "-list", ".")
+	goArgs := []string{"test", "-list", "."}
+	cmd := exec.Command("go", goArgs...)
 	cmd.Stderr = os.Stderr
 	goTestList, err := cmd.StdoutPipe()
 	if err != nil {
-		return []string{}, err
+		return []string{}, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("Err starting cmd: %+v\n", err)
-		return []string{}, err
+		return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	tests, err := parseListTests(goTestList)
 	if err != nil {
-		fmt.Printf("Err running parseListTests: %+v\n", err)
-		return []string{}, err
+		return []string{}, fmt.Errorf("error running parseListTests: %v", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Err waiting cmd: %+v\n", err)
-		return []string{}, err
+		return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	return tests, nil
 }
 
 func getCoverageAllTests() (float64, error) {
-	cmd := exec.Command("go", "test", "-coverprofile", "/dev/null")
+	goArgs := []string{"test", "-coverprofile", "/dev/null"}
+	cmd := exec.Command("go", goArgs...)
 	cmd.Stderr = os.Stderr
 	goTestCoverage, err := cmd.StdoutPipe()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("Err starting cmd: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	coverage, err := parseCoverageResult(goTestCoverage)
 	if err != nil {
-		fmt.Printf("Err running ParseCoverageResult: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error running ParseCoverageResult: %v", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Err waiting cmd: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	return coverage, nil
 }
@@ -97,24 +93,22 @@ func getCoverageTest(testName string, allTests []string) (float64, error) {
 		}
 		tests = append(tests, fmt.Sprintf("^%s$", test))
 	}
-	cmd := exec.Command("go", "test", "-coverprofile", "/dev/null", "-run", strings.Join(tests, "|"))
+	goArgs := []string{"test", "-coverprofile", "/dev/null", "-run", strings.Join(tests, "|")}
+	cmd := exec.Command("go", goArgs...)
 	cmd.Stderr = os.Stderr
 	goTestCoverage, err := cmd.StdoutPipe()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("Err starting cmd: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	coverage, err := parseCoverageResult(goTestCoverage)
 	if err != nil {
-		fmt.Printf("Err running ParseCoverageResult: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error running ParseCoverageResult: %v", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Err waiting cmd: %+v\n", err)
-		return 0, err
+		return 0, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
 	}
 	return coverage, nil
 }
