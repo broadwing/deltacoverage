@@ -1,20 +1,21 @@
 # deltacoverage
+
 Go package to provide delta coverage between your tests.
 
 ## Example
 
 ```shell
 $ deltacoverage
-TestParseCoverageResultErrorsIfGivenNoTests 1.0%
-TestParseCoverageResultReturnsCorrectValueGivenTestScriptTestCoverResult 3.0%
-TestParseCoverageResultReturnsCorrectValueGivenNoTestScriptsTestCoverResult 0.0%
-TestParseTestListReturnsZeroTestsIfGivenNoTests 0.0%
-TestParseTestListReturnsCorrectValuesGivenTestListResult 0.0%
-TestScript 45.0%
+TestParseCoverageResult_ErrorsIfGivenNoTests 1.0%
+TestParseCoverageResult_ReturnsCorrectValueGivenTestScriptTestCoverResult 3.2%
+TestParseCoverageResult_ReturnsCorrectValueGivenNoTestScriptsTestCoverResult 0.0%
+TestParseListTests_ReturnsZeroTestsIfGivenNoTests 0.0%
+TestParseListTests_ReturnsCorrectValuesGivenTestListResult 0.0%
+TestTestScript_ 54.2%
 ```
 
 The test `TestParseCoverageResultErrorsIfGivenNoTests` contributes to exclusive
-1.0% of the total coverage while `TestScript` is responsible for 45%.
+1.0% of the total coverage while `TestScript` is responsible for 54.2%.
 
 ## Motivation
 
@@ -27,11 +28,11 @@ communication purpose.
 —Kent Beck, “Is TDD Dead?”
 ```
 
-Thank you @bitfield for the suggestion.
+Thank you [@bitfield](https://github.com/bitfield) for the suggestion.
 
 ## Roadmap
 
-- POC
-- Brute force implementation using `go test` commands (WIP)
-- Borrow `cover.go` code and create `deltagecoverage.go`
+- POC :white_check_mark:
+- Brute force implementation using `go test` commands :white_check_mark:
+- Borrow `cover.go` code and create `deltagecoverage.go` -> WIP
 - (Dream) Implement as Go CLI feature.
