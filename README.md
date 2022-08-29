@@ -2,6 +2,12 @@
 
 Go package to provide delta coverage between your tests.
 
+## Installing
+
+```shell
+go install github.com/broadwing/deltacoverage/cmd/deltacoverage
+```
+
 ## Example
 
 ```shell
