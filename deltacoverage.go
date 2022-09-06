@@ -1,165 +1,53 @@
 package deltacoverage
 
 import (
-	"bufio"
-	"errors"
-	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/printer"
+	"go/token"
 	"io"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
+
+	"golang.org/x/tools/go/ast/astutil"
 )
 
-// Main runs and returns an exit code
-// If succeed, it will print to stdout the delta coverage of a function given as first argument and return zero
-// If error, it will print to stdderr and return non zero
-func Main() int {
-	coverage, err := getCoverageAllTests()
+func Instrument(w io.Writer, code string) error {
+	fs := token.NewFileSet()
+	// we need to parse comments due to CGO code
+	file, err := parser.ParseFile(fs, "", code, parser.ParseComments)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
+		return err
 	}
-	tests, err := getListTests()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
-	}
-	var runTests []string
-	args := os.Args[1:]
-	if len(args) == 0 {
-		runTests = tests
-	} else {
-		runTests = os.Args[1:]
-	}
-	for _, testName := range runTests {
-		testCoverage, err := getCoverageTest(testName, tests)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 1
-		}
-		fmt.Fprintf(os.Stdout, "%s %.1f%s\n", testName, coverage-testCoverage, "%")
-	}
-	return 0
-}
-
-func getListTests() ([]string, error) {
-	goArgs := []string{"test", "-list", "."}
-	cmd := exec.Command("go", goArgs...)
-	cmd.Stderr = os.Stderr
-	goTestList, err := cmd.StdoutPipe()
-	if err != nil {
-		return []string{}, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	if err := cmd.Start(); err != nil {
-		return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	tests, err := parseListTests(goTestList)
-	if err != nil {
-		return []string{}, fmt.Errorf("error running parseListTests: %v", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	return tests, nil
-}
-
-func getCoverageAllTests() (float64, error) {
-	goArgs := []string{"test", "-coverprofile", "/dev/null"}
-	cmd := exec.Command("go", goArgs...)
-	cmd.Stderr = os.Stderr
-	goTestCoverage, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	if err := cmd.Start(); err != nil {
-		return 0, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	coverage, err := parseCoverageResult(goTestCoverage)
-	if err != nil {
-		return 0, fmt.Errorf("error running ParseCoverageResult: %v", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		return 0, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	return coverage, nil
-}
-
-func getCoverageTest(testName string, allTests []string) (float64, error) {
-	tests := []string{}
-	for _, test := range allTests {
-		if test == testName {
-			continue
-		}
-		tests = append(tests, fmt.Sprintf("^%s$", test))
-	}
-	goArgs := []string{"test", "-coverprofile", "/dev/null", "-run", strings.Join(tests, "|")}
-	cmd := exec.Command("go", goArgs...)
-	cmd.Stderr = os.Stderr
-	goTestCoverage, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	if err := cmd.Start(); err != nil {
-		return 0, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	coverage, err := parseCoverageResult(goTestCoverage)
-	if err != nil {
-		return 0, fmt.Errorf("error running ParseCoverageResult: %v", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		return 0, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	return coverage, nil
-}
-
-// parseCoverageResult returns a non-negative value represeting the code coverage
-// in the output result.
-// It's set a negative number meaning that a coverage is not found yet, read
-// the content set the value of coverage as the value of the normal or the total
-// coverage is found. This logic assumes that total coverage comes after
-// normal coverage as it is in Go 1.19 because we want the total if availabe.
-func parseCoverageResult(r io.Reader) (float64, error) {
-	scanner := bufio.NewScanner(r)
-	var err error
-	coverage := -1.0
-	for scanner.Scan() {
-		items := strings.Fields(scanner.Text())
-		switch items[0] {
-		case "coverage:":
-			coverage, err = strconv.ParseFloat(strings.ReplaceAll(items[1], "%", ""), 64)
-			if err != nil {
-				return 0, err
+	astutil.Apply(file, nil, func(c *astutil.Cursor) bool {
+		n := c.Node()
+		switch x := n.(type) {
+		case *ast.FuncDecl:
+			// It is possible to have func declaration wihtout body in Go source code
+			if x.Body == nil {
+				return true
 			}
-		case "total":
-			if items[1] == "coverage:" {
-				coverage, err = strconv.ParseFloat(strings.ReplaceAll(items[2], "%", ""), 64)
-				if err != nil {
-					return 0, err
-				}
+			newCallStmt := &ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.Ident{
+							Name: "fmt",
+						},
+						Sel: &ast.Ident{
+							Name: "Println",
+						},
+					},
+					Args: []ast.Expr{
+						&ast.BasicLit{
+							Kind:  token.STRING,
+							Value: `"instrumentation"`,
+						},
+					},
+				},
 			}
+			x.Body.List = append([]ast.Stmt{newCallStmt}, x.Body.List...)
+			astutil.AddImport(fs, file, "fmt")
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return 0, err
-	}
-	if coverage < 0 {
-		return 0, errors.New("coverage not found")
-	}
-	return coverage, nil
-}
+		return true
+	})
 
-func parseListTests(r io.Reader) ([]string, error) {
-	scanner := bufio.NewScanner(r)
-	testsNames := []string{}
-	for scanner.Scan() {
-		text := scanner.Text()
-		if strings.HasPrefix(text, "Test") {
-			testsNames = append(testsNames, text)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return []string{}, err
-	}
-	return testsNames, nil
+	return printer.Fprint(w, fs, file)
 }
