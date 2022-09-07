@@ -20,6 +20,7 @@ func Main() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	fmt.Printf("Total covrage: %.1f%s\n", coverage, "%")
 	tests, err := getListTests()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
