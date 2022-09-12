@@ -1,83 +1,115 @@
-package deltacoverage
+package deltacoverage_test
 
 import (
-	"os"
-	"strings"
+	"bytes"
+	"fmt"
 	"testing"
 
+	"github.com/broadwing/deltacoverage"
 	"github.com/google/go-cmp/cmp"
-	"github.com/rogpeppe/go-internal/testscript"
 )
 
-func TestParseCoverageResult_ErrorsIfGivenNoTests(t *testing.T) {
+func TestParseCoverProfile_ErrorsIfFileDoesNotExist(t *testing.T) {
 	t.Parallel()
-	_, err := parseCoverageResult(strings.NewReader(`?       my_not_cool_project    [no test files]`))
+	_, err := deltacoverage.ParseCoverProfile("bogus-filename.txt.bogus")
 	if err == nil {
-		t.Error("want error but not found")
+		t.Error("want error not nil")
 	}
 }
-
-func TestParseCoverageResult_ReturnsCorrectValueGivenTestScriptTestCoverResult(t *testing.T) {
+func TestParseCoverProfile_(t *testing.T) {
 	t.Parallel()
-	want := 34.8
-	got, err := parseCoverageResult(strings.NewReader(`FAIL
-coverage: 20.2% of statements
-total coverage: 34.8% of statements
-exit status 1
-FAIL    github.com/thiagonache/deltacoverage    0.832s`))
-	if err != nil {
-		t.Fatal(err)
+	testCases := []struct {
+		desc            string
+		filePath        string
+		extraFilesPaths []string
+		want            deltacoverage.CoverProfile
+	}{
+		{
+			desc:     "Unique test returns CoverProfile representing one hundred percent delta coverage",
+			filePath: "testdata/sample1/TestSum.coverprofile",
+			want: deltacoverage.CoverProfile{
+				Branches: map[string]int{
+					"xyz/xyz.go:3.24,5.2": 1,
+				},
+				Tests:           map[string][]string{"TestSum": {"xyz/xyz.go:3.24,5.2"}},
+				TotalStatements: 1,
+			},
+		},
+		{
+			desc:            "Two tests with same code path returns CoverProfile representing zero percent delta coverage",
+			extraFilesPaths: []string{"testdata/sample2/TestSumTwoPlusTwo.coverprofile"},
+			filePath:        "testdata/sample2/TestSumOnePlusOne.coverprofile",
+			want: deltacoverage.CoverProfile{
+				Branches: map[string]int{
+					"xyz/xyz.go:3.24,5.2": 1,
+				},
+				Tests: map[string][]string{
+					"TestSumOnePlusOne": {},
+					"TestSumTwoPlusTwo": {},
+				},
+				TotalStatements: 1,
+			},
+		},
 	}
-	if want != got {
-		t.Errorf("want test coverage of %.1f got %.1f", want, got)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			got, err := deltacoverage.ParseCoverProfile(tC.filePath, tC.extraFilesPaths...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !cmp.Equal(tC.want, got) {
+				t.Error(cmp.Diff(tC.want, got))
+			}
+		})
 	}
 }
 
-func TestParseCoverageResult_ReturnsCorrectValueGivenNoTestScriptsTestCoverResult(t *testing.T) {
+func TestPrintDeltaCoverage_(t *testing.T) {
 	t.Parallel()
-	want := 16.3
-	got, err := parseCoverageResult(strings.NewReader(`PASS
-coverage: 16.3% of statements
-ok      github.com/thiagonache/deltacoverage    0.012s`))
-	if err != nil {
-		t.Fatal(err)
+	testCases := []struct {
+		desc       string
+		want       string
+		covProfile deltacoverage.CoverProfile
+	}{
+		{
+			covProfile: deltacoverage.CoverProfile{
+				Branches: map[string]int{
+					"xyz/xyz.go:3.24,5.2": 1,
+				},
+				Tests: map[string][]string{
+					"TestSum": {"xyz/xyz.go:3.24,5.2"},
+				},
+				TotalStatements: 1,
+			},
+			desc: "Unique test prints one hundred percent of delta coverage",
+			want: "TestSum 100.0%",
+		},
+		{
+			covProfile: deltacoverage.CoverProfile{
+				Branches: map[string]int{
+					"xyz/xyz.go:3.24,5.2": 1,
+				},
+				Tests: map[string][]string{
+					"TestSumOnePlusOne": {},
+					"TestSumTwoPlusTwo": {},
+				},
+				TotalStatements: 1,
+			},
+			desc: "Two tests with same code path prints zero percent of delta coverage",
+			want: "TestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%",
+		},
 	}
-	if want != got {
-		t.Errorf("want test coverage of %.1f got %.1f", want, got)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			output := &bytes.Buffer{}
+			_, err := fmt.Fprint(output, tC.covProfile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := output.String()
+			if !cmp.Equal(tC.want, got) {
+				t.Error(cmp.Diff(tC.want, got))
+			}
+		})
 	}
-}
-
-func TestParseListTests_ReturnsZeroTestsIfGivenNoTests(t *testing.T) {
-	t.Parallel()
-	got, err := parseListTests(strings.NewReader(`?       my_not_cool_project    [no test files]`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) > 0 {
-		t.Error("want zero tests when given no tests")
-	}
-}
-
-func TestParseListTests_ReturnsCorrectValuesGivenTestListResult(t *testing.T) {
-	t.Parallel()
-	want := []string{"TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult", "TestParseTestListErrorsIfNoTestsFound"}
-	got, err := parseListTests(strings.NewReader(`TestParseCoverageResultReturnsCorrectValueGivenTestCoverResult
-TestParseTestListErrorsIfNoTestsFound
-ok      github.com/thiagonache/deltacoverage    0.004s`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(testscript.RunMain(m, map[string]func() int{"deltacoverage": Main}))
-}
-
-func TestTestScript_(t *testing.T) {
-	testscript.Run(t, testscript.Params{
-		Dir: "testdata/scripts",
-	})
 }
