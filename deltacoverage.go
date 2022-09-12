@@ -3,16 +3,21 @@ package deltacoverage
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"os"
-	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"gopkg.in/errgo.v2/errors"
 )
+
+var ErrMustBeDirectory = errors.New("Must be a directory")
 
 type CoverProfile struct {
 	TotalStatements int
-	Branches        map[string]int
+	UniqueBranches  map[string]int
 	Tests           map[string][]string
 }
 
@@ -21,7 +26,11 @@ func (c CoverProfile) String() string {
 	for testName, ids := range c.Tests {
 		perc := 0.0
 		for _, id := range ids {
-			perc = float64(c.Branches[id] * 100 / 1)
+			statements, exist := c.UniqueBranches[id]
+			if !exist {
+				continue
+			}
+			perc = float64(statements) / float64(c.TotalStatements) * 100
 		}
 		output = append(output, fmt.Sprintf("%s %.1f%s", testName, perc, "%"))
 	}
@@ -29,55 +38,73 @@ func (c CoverProfile) String() string {
 	return strings.Join(output, "\n")
 }
 
-func ParseCoverProfile(coverFilePath string, extraFilePaths ...string) (CoverProfile, error) {
-	covProfile := CoverProfile{
-		Branches: map[string]int{},
-		Tests:    map[string][]string{},
+func ParseCoverProfile(dirPath string) (CoverProfile, error) {
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return CoverProfile{}, err
 	}
-	allCoverFilePaths := append([]string{coverFilePath}, extraFilePaths...)
-	for _, coverPath := range allCoverFilePaths {
-		testName := strings.Split(path.Base(coverPath), ".")[0]
-		f, err := os.Open(coverPath)
+	if !info.IsDir() {
+		return CoverProfile{}, ErrMustBeDirectory
+	}
+	covProfile := CoverProfile{
+		UniqueBranches: map[string]int{},
+		Tests:          map[string][]string{},
+	}
+	branchesCount := map[string]int{}
+	branchesStmts := map[string]int{}
+	err = filepath.Walk(dirPath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return CoverProfile{}, err
+			return err
 		}
-		defer f.Close()
-		scanner := bufio.NewScanner(f)
-		// dicard first line `mode: xxx`
-		scanner.Scan()
-		// line example with headers
-		// identifier          statements visited
-		// xyz/xyz.go:3.24,5.2 1          1
-		for scanner.Scan() {
-			items := strings.Fields(scanner.Text())
-			nrStmt, err := strconv.Atoi(items[1])
+		if filepath.Ext(info.Name()) == ".coverprofile" {
+			testName := strings.Split(filepath.Base(path), ".")[0]
+			f, err := os.Open(path)
 			if err != nil {
-				return CoverProfile{}, err
+				return err
 			}
-			_, exists := covProfile.Branches[items[0]]
-			if !exists {
-				covProfile.Branches[items[0]] = nrStmt
-				covProfile.TotalStatements += nrStmt
-				covProfile.Tests[testName] = append(covProfile.Tests[testName], items[0])
-				continue
-			}
-			// remove references from other tests
-			ids := []string{}
-			for testName, tests := range covProfile.Tests {
-				for _, id := range tests {
-					if id == items[0] {
-						continue
-					}
-					ids = append(ids, id)
+			defer f.Close()
+			scanner := bufio.NewScanner(f)
+			// dicard first line `mode: xxx`
+			scanner.Scan()
+			// line example with headers
+			// identifier          statements visited
+			// xyz/xyz.go:3.24,5.2 1          1
+			for scanner.Scan() {
+				items := strings.Fields(scanner.Text())
+				branch := items[0]
+				nrStmt, err := strconv.Atoi(items[1])
+				if err != nil {
+					return err
 				}
-				covProfile.Tests[testName] = ids
+				visited, err := strconv.Atoi(items[2])
+				if err != nil {
+					return err
+				}
+				if visited < 1 {
+					continue
+				}
+				_, exists := branchesCount[branch]
+				if !exists {
+					covProfile.TotalStatements += nrStmt
+					branchesStmts[branch] = nrStmt
+				}
+				branchesCount[branch]++
+				covProfile.Tests[testName] = append(covProfile.Tests[testName], branch)
 			}
-			// insert empty result
-			covProfile.Tests[testName] = []string{}
+			if err := scanner.Err(); err != nil {
+				return err
+			}
 		}
-		if err := scanner.Err(); err != nil {
-			return CoverProfile{}, err
+		return nil
+	})
+	if err != nil {
+		return CoverProfile{}, err
+	}
+	for branch, times := range branchesCount {
+		if times > 1 {
+			continue
 		}
+		covProfile.UniqueBranches[branch] = branchesStmts[branch]
 	}
 	return covProfile, nil
 }
