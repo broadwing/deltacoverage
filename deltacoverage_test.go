@@ -11,26 +11,55 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseCoverProfile_ErrorsIfPathDoesNotExist(t *testing.T) {
+func TestNewCoverProfile_ErrorsIfPathDoesNotExist(t *testing.T) {
 	t.Parallel()
 	nonExistentDirPath := t.TempDir() + "/bogus-directory"
-	_, err := deltacoverage.ParseCoverProfile(nonExistentDirPath)
+	_, err := deltacoverage.NewCoverProfile(nonExistentDirPath)
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("want error os.ErrNotExist, got %#v", err)
 	}
 }
 
-func TestParseCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
+func TestNewCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
 	t.Parallel()
-	_, err := deltacoverage.ParseCoverProfile("testdata/empty-file.txt")
+	_, err := deltacoverage.NewCoverProfile("testdata/empty-file.txt")
 	if !errors.Is(err, deltacoverage.ErrMustBeDirectory) {
 		t.Errorf("want error deltacoverage.ErrMustBeDirectory, got %#v", err)
 	}
 }
 
+func TestParseTotalStatements_ErrorsGivenNotFile(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		desc string
+		path string
+		err  error
+	}{
+		{
+			desc: "Given directory",
+			path: t.TempDir(),
+			err:  deltacoverage.ErrMustBeFile,
+		},
+		{
+			desc: "Given file does not exist",
+			path: t.TempDir() + "/bogus.file",
+			err:  os.ErrNotExist,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			_, err := deltacoverage.ParseTotalStatements(tC.path)
+			if !errors.Is(err, tC.err) {
+				t.Errorf("want error %#v but got %#v", tC.err, err)
+			}
+		})
+	}
+}
+
 func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory(t *testing.T) {
 	t.Parallel()
-	want := deltacoverage.CoverProfile{
+	want := &deltacoverage.CoverProfile{
+		DirPath: "testdata/sample",
 		UniqueBranches: map[string]int{
 			"a/a.go:7.30,9.2": 1,
 		},
@@ -39,9 +68,9 @@ func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory
 			"TestSumTwoPlusTwo":        {"a/a.go:3.24,5.2"},
 			"TestSubstractTwoMinusTwo": {"a/a.go:7.30,9.2"},
 		},
-		TotalStatements: 2,
+		NumberStatements: 3,
 	}
-	got, err := deltacoverage.ParseCoverProfile("testdata/sample")
+	got, err := deltacoverage.NewCoverProfile("testdata/sample")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,29 +79,7 @@ func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory
 	}
 }
 
-func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenNewCoverProfileDirectory(t *testing.T) {
-	t.Parallel()
-	want := deltacoverage.CoverProfile{
-		UniqueBranches: map[string]int{
-			"a/a.go:7.30,9.2": 1,
-		},
-		Tests: map[string][]string{
-			"TestSumOnePlusOne":        {"a/a.go:3.24,5.2"},
-			"TestSumTwoPlusTwo":        {"a/a.go:3.24,5.2"},
-			"TestSubstractTwoMinusTwo": {"a/a.go:7.30,9.2"},
-		},
-		TotalStatements: 3,
-	}
-	got, err := deltacoverage.ParseCoverProfile("testdata/new-sample")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestPrintDeltaCoverage_PrintsFiftyPercentDeltaCoverageGivenThreeTestsAndOneUniqueBranch(t *testing.T) {
+func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t *testing.T) {
 	t.Parallel()
 	covProfile := deltacoverage.CoverProfile{
 		UniqueBranches: map[string]int{
@@ -83,9 +90,9 @@ func TestPrintDeltaCoverage_PrintsFiftyPercentDeltaCoverageGivenThreeTestsAndOne
 			"TestSumTwoPlusTwo":        {"a/a.go:3.24,5.2"},
 			"TestSubstractTwoMinusTwo": {"a/a.go:7.30,9.2"},
 		},
-		TotalStatements: 2,
+		NumberStatements: 3,
 	}
-	want := "TestSubstractTwoMinusTwo 50.0%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%"
+	want := "TestSubstractTwoMinusTwo 33.3%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%"
 	output := &bytes.Buffer{}
 	_, err := fmt.Fprint(output, covProfile)
 	if err != nil {
