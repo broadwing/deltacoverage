@@ -92,7 +92,7 @@ func TestPrintDeltaCoverage_PrintsFiftyPercentDeltaCoverageGivenThreeTestsAndOne
 		t.Fatal(err)
 	}
 	got := output.String()
-	if want != got {
+	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))
 	}
 }
