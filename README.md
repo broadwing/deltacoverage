@@ -5,7 +5,7 @@ Go package to provide delta coverage between your tests.
 ## Installing
 
 ```shell
-go install github.com/broadwing/deltacoverage/cmd/deltacoverage
+go install github.com/broadwing/deltacoverage/cmd/deltacoverage@latest
 ```
 
 ## Example
@@ -20,8 +20,8 @@ TestParseListTests_ReturnsCorrectValuesGivenTestListResult 0.0%
 TestTestScript_ 54.2%
 ```
 
-The test `TestParseCoverageResultErrorsIfGivenNoTests` contributes to exclusive
-1.0% of the total coverage while `TestScript` is responsible for 54.2%.
+The test `TestParseCoverageResult_ErrorsIfGivenNoTests` contributes to exclusive
+1.0% of the total coverage while `TestScript_` is responsible for 54.2%.
 
 ## Motivation
 
@@ -40,5 +40,6 @@ Thank you [@bitfield](https://github.com/bitfield) for the suggestion.
 
 - POC :white_check_mark:
 - Brute force implementation using `go test` commands :white_check_mark:
-- Borrow `cover.go` code and create `deltagecoverage.go` -> WIP
-- (Dream) Implement as Go CLI feature.
+- Get same metrics using coverprofiles of each test instead of brute force. It's going to improve performance from O(n2) to O(n) -> WIP
+- Borrow `cover.go` code and create `deltagecoverage.go`
+- (Dream) Implement as Go CLI feature
