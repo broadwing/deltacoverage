@@ -65,7 +65,7 @@ func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t
 		},
 		NumberStatements: 3,
 	}
-	want := "TestSubstractTwoMinusTwo 33.3%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%"
+	want := "TestSubstractTwoMinusTwo 33.3%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%\n"
 	output := &bytes.Buffer{}
 	_, err := fmt.Fprint(output, covProfile)
 	if err != nil {
@@ -74,5 +74,23 @@ func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t
 	got := output.String()
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(strings.Fields(want), strings.Fields(got)))
+	}
+}
+
+func TestPrintDeltaCoverage_PrintsNoTestsFoundGivenDirectoryWithNoCoverProfile(t *testing.T) {
+	t.Parallel()
+	c, err := deltacoverage.NewCoverProfile(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "No tests found\n"
+	output := &bytes.Buffer{}
+	_, err = fmt.Fprint(output, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := output.String()
+	if !cmp.Equal(want, got) {
+		t.Error(cmp.Diff(want, got))
 	}
 }

@@ -24,8 +24,8 @@ type ProfileItem struct {
 type CoverProfile struct {
 	DirPath          string
 	NumberStatements int
-	UniqueBranches   map[string]int
 	Tests            map[string][]string
+	UniqueBranches   map[string]int
 }
 
 // ParseProfileLine returns a pointer to ProfileItem type for a given string.
@@ -59,6 +59,9 @@ func (c CoverProfile) ParseProfileLine(line string) (*ProfileItem, error) {
 // String prints out the deltacoverage percentage for each test
 func (c CoverProfile) String() string {
 	output := []string{}
+	if len(c.Tests) == 0 {
+		return "No tests found\n"
+	}
 	for testName, ids := range c.Tests {
 		perc := 0.0
 		for _, id := range ids {
@@ -71,7 +74,7 @@ func (c CoverProfile) String() string {
 		output = append(output, fmt.Sprintf("%s %.1f%s", testName, perc, "%"))
 	}
 	sort.Strings(output)
-	return strings.Join(output, "\n")
+	return fmt.Sprintf("%s\n", strings.Join(output, "\n"))
 }
 
 // ParseCoverProfile reads all files from a directory with extension
@@ -81,7 +84,7 @@ func (c CoverProfile) String() string {
 // 2. Recalculate total statements each iteration on the loop
 // 3. Add a counter and an if to just calculate the total sum in the first
 // iteration
-// Current implementation in number 3
+// Current implementation is number 3
 func (c *CoverProfile) ParseCoverProfile() error {
 	branchesCount := map[string]int{}
 	branchesStmts := map[string]int{}
