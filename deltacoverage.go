@@ -3,7 +3,6 @@ package deltacoverage
 import (
 	"bufio"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -87,14 +86,15 @@ func (c *CoverProfile) ParseCoverProfile() error {
 	branchesCount := map[string]int{}
 	branchesStmts := map[string]int{}
 	profilesRead := 0
-	err := filepath.Walk(c.DirPath, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if filepath.Ext(info.Name()) == ".coverprofile" {
+	files, err := os.ReadDir(c.DirPath)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".coverprofile" {
 			profilesRead++
-			testName := strings.Split(filepath.Base(path), ".")[0]
-			f, err := os.Open(path)
+			testName := strings.Split(filepath.Base(file.Name()), ".")[0]
+			f, err := os.Open(c.DirPath + "/" + file.Name())
 			if err != nil {
 				return err
 			}
@@ -124,10 +124,6 @@ func (c *CoverProfile) ParseCoverProfile() error {
 				return err
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 	for branch, times := range branchesCount {
 		if times < 2 {
