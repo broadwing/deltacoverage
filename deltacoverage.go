@@ -15,7 +15,7 @@ import (
 var ErrMustBeDirectory = errors.New("Must be a directory")
 var ErrMustBeFile = errors.New("Must be a file")
 
-type ProfileItem struct {
+type profileItem struct {
 	Branch     string
 	Statements int
 	Visited    bool
@@ -28,27 +28,27 @@ type CoverProfile struct {
 	UniqueBranches   map[string]int
 }
 
-// ParseProfileLine returns a pointer to ProfileItem type for a given string.
+// parseProfileLine returns a pointer to ProfileItem type for a given string.
 // line example with headers
 // identifier          statements visited
 // xyz/xyz.go:3.24,5.2 1          1
-func (c CoverProfile) ParseProfileLine(line string) (*ProfileItem, error) {
+func (c CoverProfile) parseProfileLine(line string) (*profileItem, error) {
 	if strings.HasPrefix(line, "mode:") {
-		return &ProfileItem{}, nil
+		return &profileItem{}, nil
 	}
 	items := strings.Fields(line)
 	branch := items[0]
-	profItem := &ProfileItem{
+	profItem := &profileItem{
 		Branch: branch,
 	}
 	nrStmt, err := strconv.Atoi(items[1])
 	if err != nil {
-		return &ProfileItem{}, err
+		return &profileItem{}, err
 	}
 	profItem.Statements = nrStmt
 	timesVisited, err := strconv.Atoi(items[2])
 	if err != nil {
-		return &ProfileItem{}, err
+		return &profileItem{}, err
 	}
 	if timesVisited > 0 {
 		profItem.Visited = true
@@ -77,7 +77,7 @@ func (c CoverProfile) String() string {
 	return fmt.Sprintf("%s\n", strings.Join(output, "\n"))
 }
 
-// ParseCoverProfile reads all files from a directory with extension
+// parseCoverProfile reads all files from a directory with extension
 // .coverprofile, parses it, and populate CoverProfile object
 // Design tradeoff to get the total number of statements:
 // 1. Parse one file just to sum the total statements
@@ -85,7 +85,7 @@ func (c CoverProfile) String() string {
 // 3. Add a counter and an if to just calculate the total sum in the first
 // iteration
 // Current implementation is number 3
-func (c *CoverProfile) ParseCoverProfile() error {
+func (c *CoverProfile) parseCoverProfile() error {
 	branchesCount := map[string]int{}
 	branchesStmts := map[string]int{}
 	profilesRead := 0
@@ -105,7 +105,7 @@ func (c *CoverProfile) ParseCoverProfile() error {
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
 				line := scanner.Text()
-				profileItem, err := c.ParseProfileLine(line)
+				profileItem, err := c.parseProfileLine(line)
 				if err != nil {
 					return fmt.Errorf("cannot parse profile line %q: %+v", line, err)
 				}
@@ -149,7 +149,7 @@ func NewCoverProfile(dirPath string) (*CoverProfile, error) {
 		UniqueBranches: map[string]int{},
 		Tests:          map[string][]string{},
 	}
-	err = covProf.ParseCoverProfile()
+	err = covProf.parseCoverProfile()
 	if err != nil {
 		return &CoverProfile{}, err
 	}
