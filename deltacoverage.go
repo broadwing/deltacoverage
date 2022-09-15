@@ -99,6 +99,40 @@ func (c *CoverProfile) ParseCoverProfile() error {
 	return nil
 }
 
+func (c *CoverProfile) ParseTotalStatements() error {
+	files, err := os.ReadDir(c.DirPath)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".coverprofile" {
+			f, err := os.Open(c.DirPath + "/" + file.Name())
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			scanner := bufio.NewScanner(f)
+			// dicard first line `mode: xxx`
+			scanner.Scan()
+			// line example with headers
+			// identifier          statements visited
+			// xyz/xyz.go:3.24,5.2 1          1
+			for scanner.Scan() {
+				testStmt, err := strconv.Atoi(strings.Fields(scanner.Text())[1])
+				if err != nil {
+					return err
+				}
+				c.NumberStatements += testStmt
+			}
+			if err := scanner.Err(); err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
+}
+
 func NewCoverProfile(dirPath string) (*CoverProfile, error) {
 	info, err := os.Stat(dirPath)
 	if err != nil {
@@ -112,56 +146,13 @@ func NewCoverProfile(dirPath string) (*CoverProfile, error) {
 		UniqueBranches: map[string]int{},
 		Tests:          map[string][]string{},
 	}
-	files, err := os.ReadDir(covProf.DirPath)
+	err = covProf.ParseTotalStatements()
 	if err != nil {
 		return &CoverProfile{}, err
-	}
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".coverprofile" {
-			nrStatsments, err := ParseTotalStatements(dirPath + "/" + file.Name())
-			if err != nil {
-				return &CoverProfile{}, err
-			}
-			covProf.NumberStatements = nrStatsments
-			break
-		}
 	}
 	err = covProf.ParseCoverProfile()
 	if err != nil {
 		return &CoverProfile{}, err
 	}
 	return covProf, nil
-}
-
-func ParseTotalStatements(filePath string) (int, error) {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		return 0, err
-	}
-	if info.IsDir() {
-		return 0, ErrMustBeFile
-	}
-	f, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	// dicard first line `mode: xxx`
-	scanner.Scan()
-	// line example with headers
-	// identifier          statements visited
-	// xyz/xyz.go:3.24,5.2 1          1
-	nrStmt := 0
-	for scanner.Scan() {
-		testStmt, err := strconv.Atoi(strings.Fields(scanner.Text())[1])
-		if err != nil {
-			return 0, err
-		}
-		nrStmt += testStmt
-	}
-	if err := scanner.Err(); err != nil {
-		return 0, err
-	}
-	return nrStmt, nil
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/broadwing/deltacoverage"
@@ -25,34 +26,6 @@ func TestNewCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
 	_, err := deltacoverage.NewCoverProfile("testdata/empty-file.txt")
 	if !errors.Is(err, deltacoverage.ErrMustBeDirectory) {
 		t.Errorf("want error deltacoverage.ErrMustBeDirectory, got %#v", err)
-	}
-}
-
-func TestParseTotalStatements_ErrorsGivenNotFile(t *testing.T) {
-	t.Parallel()
-	testCases := []struct {
-		desc string
-		path string
-		err  error
-	}{
-		{
-			desc: "Given directory",
-			path: t.TempDir(),
-			err:  deltacoverage.ErrMustBeFile,
-		},
-		{
-			desc: "Given file does not exist",
-			path: t.TempDir() + "/bogus.file",
-			err:  os.ErrNotExist,
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			_, err := deltacoverage.ParseTotalStatements(tC.path)
-			if !errors.Is(err, tC.err) {
-				t.Errorf("want error %#v but got %#v", tC.err, err)
-			}
-		})
 	}
 }
 
@@ -100,6 +73,6 @@ func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t
 	}
 	got := output.String()
 	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+		t.Error(cmp.Diff(strings.Fields(want), strings.Fields(got)))
 	}
 }
