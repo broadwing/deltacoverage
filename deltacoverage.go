@@ -113,8 +113,8 @@ func (c *CoverProfile) ParseCoverProfile() error {
 				if !profileItem.Visited {
 					continue
 				}
-				_, exists := branchesCount[profileItem.Branch]
-				if !exists {
+				_, ok := branchesCount[profileItem.Branch]
+				if !ok {
 					branchesStmts[profileItem.Branch] = profileItem.Statements
 				}
 				branchesCount[profileItem.Branch]++
