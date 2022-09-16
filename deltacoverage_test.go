@@ -32,7 +32,7 @@ func TestNewCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
 func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory(t *testing.T) {
 	t.Parallel()
 	want := &deltacoverage.CoverProfile{
-		DirPath: "testdata/sample",
+		DirPath: "testdata/coverprofiles",
 		UniqueBranches: map[string]int{
 			"a/a.go:7.30,9.2": 1,
 		},
@@ -43,7 +43,7 @@ func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory
 		},
 		NumberStatements: 3,
 	}
-	got, err := deltacoverage.NewCoverProfile("testdata/sample")
+	got, err := deltacoverage.NewCoverProfile("testdata/coverprofiles")
 	if err != nil {
 		t.Fatal(err)
 	}
