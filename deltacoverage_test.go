@@ -285,9 +285,6 @@ func TestGenerateCoverProfiles_GeneratesCorrectCoverProfilesFiles(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(profiles) != 3 {
-		t.Fatalf("want three profiles but found %d", len(profiles))
-	}
 	goldenFiles := []string{
 		"testdata/code/golden/TestSumOnePlusOne.coverprofile",
 		"testdata/code/golden/TestSumTwoPlusTwo.coverprofile",
