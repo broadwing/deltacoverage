@@ -3,7 +3,9 @@ package deltacoverage
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -30,7 +32,7 @@ type CoverProfile struct {
 
 // parseProfileLine returns a pointer to ProfileItem type for a given string.
 // line example with headers
-// identifier          statements visited
+// branch              statements visited
 // xyz/xyz.go:3.24,5.2 1          1
 func (c CoverProfile) parseProfileLine(line string) (*profileItem, error) {
 	if strings.HasPrefix(line, "mode:") {
@@ -156,4 +158,65 @@ func NewCoverProfile(dirPath string) (*CoverProfile, error) {
 		return &CoverProfile{}, err
 	}
 	return covProf, nil
+}
+
+func ListTests(dirPath string) ([]string, error) {
+	goArgs := []string{"test", "-list", "."}
+	cmd := exec.Command("go", goArgs...)
+	cmd.Dir = dirPath
+	cmd.Stderr = os.Stderr
+	goTestList, err := cmd.StdoutPipe()
+	if err != nil {
+		return []string{}, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	if err := cmd.Start(); err != nil {
+		return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	tests, err := parseListTests(goTestList)
+	if err != nil {
+		return []string{}, fmt.Errorf("error running parseListTests: %v", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	return tests, nil
+}
+
+func parseListTests(r io.Reader) ([]string, error) {
+	scanner := bufio.NewScanner(r)
+	testsNames := []string{}
+	for scanner.Scan() {
+		text := scanner.Text()
+		if strings.HasPrefix(text, "Test") {
+			testsNames = append(testsNames, text)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return []string{}, err
+	}
+	return testsNames, nil
+}
+
+func GenerateCoverProfiles(dirPath string) ([]string, error) {
+	tests, err := ListTests(dirPath)
+	if err != nil {
+		return []string{}, err
+	}
+	profiles := []string{}
+	for _, test := range tests {
+		outputFile := test + ".coverprofile"
+		goArgs := []string{"test", "-run", test, "-coverprofile", outputFile}
+		cmd := exec.Command("go", goArgs...)
+		cmd.Dir = dirPath
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = io.Discard
+		if err := cmd.Start(); err != nil {
+			return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
+		}
+		if err := cmd.Wait(); err != nil {
+			return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
+		}
+		profiles = append(profiles, outputFile)
+	}
+	return profiles, nil
 }

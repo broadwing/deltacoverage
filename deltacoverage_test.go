@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -29,7 +30,7 @@ func TestNewCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
 	}
 }
 
-func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory(t *testing.T) {
+func TestParseCoverProfile_ReturnsExpectedCoverProfileGivenDirectoryWithCoverProfiles(t *testing.T) {
 	t.Parallel()
 	want := &deltacoverage.CoverProfile{
 		DirPath: "testdata/coverprofiles",
@@ -275,5 +276,52 @@ TestPrintDeltaCoverage_PrintsNoTestsFoundGivenDirectoryWithNoCoverProfile 1.4%`
 	got := output.String()
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(strings.Fields(want), strings.Fields(got)))
+	}
+}
+
+func TestGenerateCoverProfiles_GeneratesCorrectCoverProfilesFiles(t *testing.T) {
+	t.Parallel()
+	profiles, err := deltacoverage.GenerateCoverProfiles("testdata/code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(profiles) != 3 {
+		t.Fatalf("want three profiles but found %d", len(profiles))
+	}
+	goldenFiles := []string{
+		"testdata/code/golden/TestSumOnePlusOne.coverprofile",
+		"testdata/code/golden/TestSumTwoPlusTwo.coverprofile",
+		"testdata/code/golden/TestSubstractTwoMinusTwo.coverprofile",
+	}
+	if len(profiles) != len(goldenFiles) {
+		t.Fatalf("Number of profiles and golden files mismatch. Found %q profiles and %q golden files", profiles, goldenFiles)
+	}
+	for i := range profiles {
+		golden, err := os.Open(goldenFiles[i])
+		if err != nil {
+			t.Errorf("Error opening golden file %q: %+v\n", goldenFiles[i], err)
+			continue
+		}
+		defer golden.Close()
+		want, err := io.ReadAll(golden)
+		if err != nil {
+			t.Errorf("Error reading golden file %q: %+v", goldenFiles[i], err)
+			continue
+		}
+		f, err := os.Open("testdata/code/" + profiles[i])
+		if err != nil {
+			t.Errorf("Error opening result file %q: %v", profiles[i], err)
+			continue
+		}
+		defer f.Close()
+		got, err := io.ReadAll(f)
+		if err != nil {
+			t.Errorf("Error reading result file %q: %v", profiles[i], err)
+			continue
+		}
+		if !cmp.Equal(want, got) {
+			t.Error(profiles[i])
+			t.Error(cmp.Diff(strings.Fields(string(want)), strings.Fields(string(got))))
+		}
 	}
 }
