@@ -64,13 +64,15 @@ func (c CoverProfile) String() string {
 	}
 	for testName, ids := range c.Tests {
 		perc := 0.0
+		testStatements := 0
 		for _, id := range ids {
-			statements, exist := c.UniqueBranches[id]
-			if !exist {
+			statements, ok := c.UniqueBranches[id]
+			if !ok {
 				continue
 			}
-			perc = float64(statements) / float64(c.NumberStatements) * 100
+			testStatements += statements
 		}
+		perc = float64(testStatements) / float64(c.NumberStatements) * 100
 		output = append(output, fmt.Sprintf("%s %.1f%s", testName, perc, "%"))
 	}
 	sort.Strings(output)
