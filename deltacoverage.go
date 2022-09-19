@@ -60,7 +60,7 @@ func (c CoverProfile) parseProfileLine(line string) (*profileItem, error) {
 func (c CoverProfile) String() string {
 	output := []string{}
 	if len(c.Tests) == 0 {
-		return "No tests found\n"
+		return "No tests found"
 	}
 	for testName, ids := range c.Tests {
 		perc := 0.0
@@ -74,7 +74,7 @@ func (c CoverProfile) String() string {
 		output = append(output, fmt.Sprintf("%s %.1f%s", testName, perc, "%"))
 	}
 	sort.Strings(output)
-	return fmt.Sprintf("%s\n", strings.Join(output, "\n"))
+	return strings.Join(output, "\n")
 }
 
 // parseCoverProfile reads all files from a directory with extension

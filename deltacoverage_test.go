@@ -65,7 +65,7 @@ func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t
 		},
 		NumberStatements: 3,
 	}
-	want := "TestSubstractTwoMinusTwo 33.3%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%\n"
+	want := "TestSubstractTwoMinusTwo 33.3%\nTestSumOnePlusOne 0.0%\nTestSumTwoPlusTwo 0.0%"
 	output := &bytes.Buffer{}
 	_, err := fmt.Fprint(output, covProfile)
 	if err != nil {
@@ -83,7 +83,7 @@ func TestPrintDeltaCoverage_PrintsNoTestsFoundGivenDirectoryWithNoCoverProfile(t
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "No tests found\n"
+	want := "No tests found"
 	output := &bytes.Buffer{}
 	_, err = fmt.Fprint(output, c)
 	if err != nil {
