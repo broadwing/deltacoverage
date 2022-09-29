@@ -24,9 +24,13 @@ type profileItem struct {
 }
 
 type CoverProfile struct {
-	DirPath          string
 	NumberStatements int
-	Tests            map[string][]string
+	OutputPath       string
+	PackagePath      string
+	Stderr           io.Writer
+	Stdout           io.Writer
+	Tests            []string
+	TestsBranches    map[string][]string
 	UniqueBranches   map[string]int
 }
 
@@ -64,7 +68,7 @@ func (c CoverProfile) String() string {
 	if len(c.Tests) == 0 {
 		return "No tests found"
 	}
-	for testName, ids := range c.Tests {
+	for testName, ids := range c.TestsBranches {
 		perc := 0.0
 		testStatements := 0
 		for _, id := range ids {
@@ -81,7 +85,7 @@ func (c CoverProfile) String() string {
 	return strings.Join(output, "\n")
 }
 
-// parseCoverProfile reads all files from a directory with extension
+// Parse reads all files from a directory with extension
 // .coverprofile, parses it, and populate CoverProfile object
 // Design tradeoff to get the total number of statements:
 // 1. Parse one file just to sum the total statements
@@ -89,11 +93,11 @@ func (c CoverProfile) String() string {
 // 3. Add a counter and an if to just calculate the total sum in the first
 // iteration
 // Current implementation is number 3
-func (c *CoverProfile) parseCoverProfile() error {
+func (c *CoverProfile) Parse() error {
 	branchesCount := map[string]int{}
 	branchesStmts := map[string]int{}
 	profilesRead := 0
-	files, err := os.ReadDir(c.DirPath)
+	files, err := os.ReadDir(c.OutputPath)
 	if err != nil {
 		return err
 	}
@@ -101,7 +105,7 @@ func (c *CoverProfile) parseCoverProfile() error {
 		if filepath.Ext(file.Name()) == ".coverprofile" {
 			profilesRead++
 			testName := strings.Split(filepath.Base(file.Name()), ".")[0]
-			f, err := os.Open(c.DirPath + "/" + file.Name())
+			f, err := os.Open(c.OutputPath + "/" + file.Name())
 			if err != nil {
 				return err
 			}
@@ -125,7 +129,7 @@ func (c *CoverProfile) parseCoverProfile() error {
 					branchesStmts[profileItem.Branch] = profileItem.Statements
 				}
 				branchesCount[profileItem.Branch]++
-				c.Tests[testName] = append(c.Tests[testName], profileItem.Branch)
+				c.TestsBranches[testName] = append(c.TestsBranches[testName], profileItem.Branch)
 			}
 			if err := scanner.Err(); err != nil {
 				return err
@@ -140,46 +144,75 @@ func (c *CoverProfile) parseCoverProfile() error {
 	return nil
 }
 
-func NewCoverProfile(dirPath string) (*CoverProfile, error) {
-	info, err := os.Stat(dirPath)
+func (c *CoverProfile) Generate() error {
+	err := c.ListTests()
+	if err != nil {
+		return err
+	}
+	for _, test := range c.Tests {
+		outputFile := filepath.Join(c.OutputPath, test+".coverprofile")
+		goArgs := []string{"test", "-run", test, "-coverprofile", outputFile}
+		cmd := exec.Command("go", goArgs...)
+		cmd.Dir = c.PackagePath
+		cmd.Stderr = c.Stderr
+		cmd.Stdout = c.Stdout
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
+		}
+		if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
+		}
+	}
+	return nil
+}
+
+func (c *CoverProfile) ListTests() error {
+	goArgs := []string{"test", "-list", "."}
+	cmd := exec.Command("go", goArgs...)
+	cmd.Dir = c.PackagePath
+	cmd.Stderr = c.Stderr
+	goTestList, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	c.Tests, err = parseListTests(goTestList)
+	if err != nil {
+		return fmt.Errorf("error running parseListTests: %v", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
+	}
+	return nil
+}
+
+func (c *CoverProfile) Cleanup() error {
+	return os.RemoveAll(c.OutputPath)
+}
+
+func NewCoverProfile(codePath string) (*CoverProfile, error) {
+	info, err := os.Stat(codePath)
 	if err != nil {
 		return &CoverProfile{}, err
 	}
 	if !info.IsDir() {
 		return &CoverProfile{}, ErrMustBeDirectory
 	}
-	covProf := &CoverProfile{
-		DirPath:        dirPath,
-		UniqueBranches: map[string]int{},
-		Tests:          map[string][]string{},
-	}
-	err = covProf.parseCoverProfile()
+	tempDir, err := os.MkdirTemp(os.TempDir(), "deltacoverage")
 	if err != nil {
 		return &CoverProfile{}, err
 	}
-	return covProf, nil
-}
-
-func ListTests(dirPath string) ([]string, error) {
-	goArgs := []string{"test", "-list", "."}
-	cmd := exec.Command("go", goArgs...)
-	cmd.Dir = dirPath
-	cmd.Stderr = os.Stderr
-	goTestList, err := cmd.StdoutPipe()
-	if err != nil {
-		return []string{}, fmt.Errorf("error getting pipe for \"go %s\": %v", strings.Join(goArgs, " "), err)
+	c := &CoverProfile{
+		OutputPath:     tempDir,
+		PackagePath:    codePath,
+		Stderr:         os.Stderr,
+		Stdout:         io.Discard,
+		TestsBranches:  map[string][]string{},
+		UniqueBranches: map[string]int{},
 	}
-	if err := cmd.Start(); err != nil {
-		return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	tests, err := parseListTests(goTestList)
-	if err != nil {
-		return []string{}, fmt.Errorf("error running parseListTests: %v", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
-	}
-	return tests, nil
+	return c, nil
 }
 
 func parseListTests(r io.Reader) ([]string, error) {
@@ -195,28 +228,4 @@ func parseListTests(r io.Reader) ([]string, error) {
 		return []string{}, err
 	}
 	return testsNames, nil
-}
-
-func GenerateCoverProfiles(dirPath string) ([]string, error) {
-	tests, err := ListTests(dirPath)
-	if err != nil {
-		return []string{}, err
-	}
-	profiles := []string{}
-	for _, test := range tests {
-		outputFile := test + ".coverprofile"
-		goArgs := []string{"test", "-run", test, "-coverprofile", outputFile}
-		cmd := exec.Command("go", goArgs...)
-		cmd.Dir = dirPath
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = io.Discard
-		if err := cmd.Start(); err != nil {
-			return []string{}, fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
-		}
-		if err := cmd.Wait(); err != nil {
-			return []string{}, fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
-		}
-		profiles = append(profiles, outputFile)
-	}
-	return profiles, nil
 }
