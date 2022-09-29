@@ -3,7 +3,6 @@ package deltacoverage_test
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -306,27 +305,22 @@ func TestParse_ReturnsExpectedNumberStatementsGivenOutputPath(t *testing.T) {
 	}
 }
 
-func TestPrintDeltaCoverage_PrintsNoTestsFoundGivenDirectoryWithNoCoverProfile(t *testing.T) {
+func TestString_ReturnsNoTestsFoundGivenDirectoryWithNoCoverProfile(t *testing.T) {
 	t.Parallel()
 	c, err := deltacoverage.NewCoverProfile(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := "No tests found"
-	output := &bytes.Buffer{}
-	_, err = fmt.Fprint(output, c)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := output.String()
+	got := c.String()
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))
 	}
 }
 
-func TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile(t *testing.T) {
+func TestString_ReturnsExpectedDeltaCoverageGivenCoverProfile(t *testing.T) {
 	t.Parallel()
-	covProfile := deltacoverage.CoverProfile{
+	c := deltacoverage.CoverProfile{
 		UniqueBranches: map[string]int{
 			"github.com/broadwing/deltacoverage/deltacoverage.go:104.4,106.23":  3,
 			"github.com/broadwing/deltacoverage/deltacoverage.go:106.23,109.19": 3,
@@ -438,12 +432,7 @@ TestNewCoverProfile_ErrorsIfPathIsNotDirectory 1.4%
 TestParseCoverProfile_ReturnsExpectedCoverProfileGivenCoverProfileDirectory 49.3%
 TestPrintDeltaCoverage_PrintsCorrectPercentDeltaCoverageGivenCoverProfile 13.7%
 TestPrintDeltaCoverage_PrintsNoTestsFoundGivenDirectoryWithNoCoverProfile 1.4%`
-	output := &bytes.Buffer{}
-	_, err := fmt.Fprint(output, covProfile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := output.String()
+	got := c.String()
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(strings.Fields(want), strings.Fields(got)))
 	}
