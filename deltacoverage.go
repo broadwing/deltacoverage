@@ -229,3 +229,35 @@ func parseListTests(r io.Reader) ([]string, error) {
 	}
 	return testsNames, nil
 }
+
+func Main() int {
+	args := os.Args[1:]
+	var packagePath string
+	if len(args) == 0 {
+		packagePath = "./"
+	} else {
+		packagePath = os.Args[1]
+	}
+	c, err := NewCoverProfile(packagePath)
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	err = c.Generate()
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	err = c.Parse()
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	fmt.Println(c)
+	err = c.Cleanup()
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	return 0
+}

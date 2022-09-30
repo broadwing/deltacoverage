@@ -1,28 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"os"
 
 	"github.com/broadwing/deltacoverage"
 )
 
 func main() {
-	c, err := deltacoverage.NewCoverProfile("./")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = c.Generate()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = c.Parse()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(c)
-	err = c.Cleanup()
-	if err != nil {
-		log.Fatal(err)
-	}
+	os.Exit(deltacoverage.Main())
 }
