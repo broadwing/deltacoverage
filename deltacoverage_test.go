@@ -245,19 +245,6 @@ func TestParse_ReturnsExpectedNumberStatementsGivenOutputPath(t *testing.T) {
 	}
 }
 
-func TestString_ReturnsNoTestsFoundGivenDirectoryWithNoCoverProfile(t *testing.T) {
-	t.Parallel()
-	c, err := deltacoverage.NewCoverProfile(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "No tests found"
-	got := c.String()
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
 func TestString_ReturnsExpectedDeltaCoverageGivenCoverProfile(t *testing.T) {
 	t.Parallel()
 	c := deltacoverage.CoverProfile{

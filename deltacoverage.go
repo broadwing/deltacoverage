@@ -66,7 +66,8 @@ func (c CoverProfile) parseProfileLine(line string) (*profileItem, error) {
 func (c CoverProfile) String() string {
 	output := []string{}
 	if len(c.Tests) == 0 {
-		return "No tests found"
+		fmt.Fprintf(c.Stderr, "No tests found\n")
+		return ""
 	}
 	for testName, ids := range c.TestsBranches {
 		perc := 0.0
