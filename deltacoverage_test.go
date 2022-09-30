@@ -24,7 +24,7 @@ func TestNewCoverProfile_ErrorsIfPathDoesNotExist(t *testing.T) {
 
 func TestNewCoverProfile_ErrorsIfPathIsNotDirectory(t *testing.T) {
 	t.Parallel()
-	_, err := deltacoverage.NewCoverProfile("testdata/empty-file.txt")
+	_, err := deltacoverage.NewCoverProfile("testdata/emptyfile.txt")
 	if !errors.Is(err, deltacoverage.ErrMustBeDirectory) {
 		t.Errorf("want error deltacoverage.ErrMustBeDirectory, got %#v", err)
 	}
