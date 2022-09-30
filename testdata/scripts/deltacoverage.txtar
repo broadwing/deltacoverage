@@ -1,7 +1,6 @@
 env GOCACHE=$TMPDIR/.cache
-exec deltacoverage TestSubstractTwoMinusTwo
-stdout 50.0
-
+exec deltacoverage
+stdout 'TestSubstractTwoMinusTwo 50.0'
 -- sampletestscript.go --
 package sampletestscript
 

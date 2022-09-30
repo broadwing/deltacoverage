@@ -1,0 +1,14 @@
+env GOCACHE=$TMPDIR/.cache
+exec deltacoverage
+stderr 'No tests found\n'
+-- sampletestscript.go --
+package sampletestscript
+
+func Sum(a, b int) int {
+	return a + b
+}
+
+-- go.mod --
+module sampletestscript
+
+go 1.19
