@@ -245,6 +245,32 @@ func TestParse_ReturnsExpectedNumberStatementsGivenOutputPath(t *testing.T) {
 	}
 }
 
+func TestParse_ErrorsGivenOutputPathWithCoverProfileContainsInvalidNumberStatements(t *testing.T) {
+	t.Parallel()
+	c, err := deltacoverage.NewCoverProfile(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.OutputPath = "testdata/coverprofiles/invalidNumberStatements"
+	err = c.Parse()
+	if err == nil {
+		t.Error("want error but got nil")
+	}
+}
+
+func TestParse_ErrorsGivenOutputPathWithCoverProfileContainsInvalidVisited(t *testing.T) {
+	t.Parallel()
+	c, err := deltacoverage.NewCoverProfile(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.OutputPath = "testdata/coverprofiles/invalidVisited"
+	err = c.Parse()
+	if err == nil {
+		t.Error("want error but got nil")
+	}
+}
+
 func TestString_ReturnsExpectedDeltaCoverageGivenCoverProfile(t *testing.T) {
 	t.Parallel()
 	c := deltacoverage.CoverProfile{
