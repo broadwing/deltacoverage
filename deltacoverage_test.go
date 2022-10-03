@@ -63,7 +63,7 @@ func TestParse_ReturnsExpectedUniqueBranchesGivenOutputPath(t *testing.T) {
 		want       map[string]int
 	}{
 		{
-			desc:       "With simple coverprofiles",
+			desc:       "With simple cover profiles",
 			outputPath: "testdata/coverprofiles/simple",
 			want:       map[string]int{"a/a.go:7.30,9.2": 1},
 		},
@@ -131,7 +131,7 @@ func TestParse_ReturnsExpectedTestsBranchesGivenOutputPath(t *testing.T) {
 		want       map[string][]string
 	}{
 		{
-			desc:       "With simple coverprofiles",
+			desc:       "With simple cover profiles",
 			outputPath: "testdata/coverprofiles/simple",
 			want: map[string][]string{
 				"TestSubstractTwoMinusTwo": {"a/a.go:7.30,9.2"},
@@ -410,9 +410,9 @@ func TestGenerate_ErrorsGivenCodeWithNoTests(t *testing.T) {
 	}
 }
 
-func TestGenerate_CreatesExpectedCoverProfilesGivenCode(t *testing.T) {
+func TestGenerate_CreatesExpectedCoverProfilesGivenCodeWithThreeTests(t *testing.T) {
 	t.Parallel()
-	c, err := deltacoverage.NewCoverProfile("testdata/code")
+	c, err := deltacoverage.NewCoverProfile("testdata/code/threeTests")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -447,9 +447,9 @@ func TestGenerate_CreatesExpectedCoverProfilesGivenCode(t *testing.T) {
 	}
 }
 
-func TestListTests_SetsExpectedTestsNamesGivenCode(t *testing.T) {
+func TestListTests_SetsExpectedTestsNamesGivenCodeWithOneTest(t *testing.T) {
 	t.Parallel()
-	c, err := deltacoverage.NewCoverProfile("testdata/simplecode")
+	c, err := deltacoverage.NewCoverProfile("testdata/code/oneTest")
 	if err != nil {
 		t.Fatal(err)
 	}
