@@ -64,12 +64,12 @@ func TestParse_ReturnsExpectedUniqueBranchesGivenOutputPath(t *testing.T) {
 	}{
 		{
 			desc:       "With simple coverprofiles",
-			outputPath: "testdata/simplecoverprofiles",
+			outputPath: "testdata/coverprofiles/simple",
 			want:       map[string]int{"a/a.go:7.30,9.2": 1},
 		},
 		{
-			desc:       "With complex coverprofiles",
-			outputPath: "testdata/coverprofiles",
+			desc:       "With cover profiles sample",
+			outputPath: "testdata/coverprofiles/sample",
 			want: map[string]int{
 				"github.com/broadwing/deltacoverage/deltacoverage.go:104.4,106.23":  3,
 				"github.com/broadwing/deltacoverage/deltacoverage.go:106.23,109.19": 3,
@@ -132,7 +132,7 @@ func TestParse_ReturnsExpectedTestsBranchesGivenOutputPath(t *testing.T) {
 	}{
 		{
 			desc:       "With simple coverprofiles",
-			outputPath: "testdata/simplecoverprofiles",
+			outputPath: "testdata/coverprofiles/simple",
 			want: map[string][]string{
 				"TestSubstractTwoMinusTwo": {"a/a.go:7.30,9.2"},
 				"TestSumOnePlusOne":        {"a/a.go:3.24,5.2"},
@@ -140,8 +140,8 @@ func TestParse_ReturnsExpectedTestsBranchesGivenOutputPath(t *testing.T) {
 			},
 		},
 		{
-			desc:       "With complex coverprofiles",
-			outputPath: "testdata/coverprofiles",
+			desc:       "With cover profiles sample",
+			outputPath: "testdata/coverprofiles/sample",
 			want: map[string][]string{
 				"TestNewCoverProfile_ErrorsIfPathDoesNotExist": {
 					"github.com/broadwing/deltacoverage/deltacoverage.go:139.61,141.16",
@@ -233,7 +233,7 @@ func TestParse_ReturnsExpectedNumberStatementsGivenOutputPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.OutputPath = "testdata/coverprofiles"
+	c.OutputPath = "testdata/coverprofiles/sample"
 	err = c.Parse()
 	if err != nil {
 		t.Fatal(err)
