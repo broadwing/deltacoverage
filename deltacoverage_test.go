@@ -11,6 +11,7 @@ import (
 
 	"github.com/broadwing/deltacoverage"
 	"github.com/google/go-cmp/cmp"
+	"github.com/rogpeppe/go-internal/testscript"
 )
 
 func TestNewCoverProfile_ErrorsIfPathDoesNotExist(t *testing.T) {
@@ -480,4 +481,17 @@ func TestCleanup_RemovesOutputPath(t *testing.T) {
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("want os.ErrNotExist but got %#v", err)
 	}
+}
+
+func TestMain(m *testing.M) {
+	os.Exit(testscript.RunMain(m, map[string]func() int{"deltacoverage": deltacoverage.Main}))
+}
+
+func TestTestScript_(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long test")
+	}
+	testscript.Run(t, testscript.Params{
+		Dir: "testdata/scripts",
+	})
 }
