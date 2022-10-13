@@ -151,17 +151,16 @@ func (c *CoverProfile) Generate() error {
 		return err
 	}
 	for _, test := range c.Tests {
-		outputFile := filepath.Join(c.OutputPath, test+".coverprofile")
-		goArgs := []string{"test", "-run", test, "-coverprofile", outputFile}
-		cmd := exec.Command("go", goArgs...)
+		outputFile := c.OutputPath + "/" + test + ".coverprofile"
+		cmd := exec.Command("go", "test", "-run", test, "-coverprofile", outputFile)
 		cmd.Dir = c.PackagePath
 		cmd.Stderr = c.Stderr
 		cmd.Stdout = c.Stdout
 		if err := cmd.Start(); err != nil {
-			return fmt.Errorf("error starting \"go %s\": %v", strings.Join(goArgs, " "), err)
+			return fmt.Errorf("error starting %q: %v", strings.Join(cmd.Args, " "), err)
 		}
 		if err := cmd.Wait(); err != nil {
-			return fmt.Errorf("error running \"go %s\": %v", strings.Join(goArgs, " "), err)
+			return fmt.Errorf("error running %q: %v", strings.Join(cmd.Args, " "), err)
 		}
 	}
 	return nil
@@ -196,14 +195,14 @@ func (c *CoverProfile) Cleanup() error {
 func NewCoverProfile(codePath string) (*CoverProfile, error) {
 	info, err := os.Stat(codePath)
 	if err != nil {
-		return &CoverProfile{}, err
+		return nil, err
 	}
 	if !info.IsDir() {
-		return &CoverProfile{}, ErrMustBeDirectory
+		return nil, ErrMustBeDirectory
 	}
 	tempDir, err := os.MkdirTemp(os.TempDir(), "deltacoverage")
 	if err != nil {
-		return &CoverProfile{}, err
+		return nil, err
 	}
 	c := &CoverProfile{
 		OutputPath:     tempDir,
@@ -233,10 +232,8 @@ func parseListTests(r io.Reader) ([]string, error) {
 
 func Main() int {
 	args := os.Args[1:]
-	var packagePath string
-	if len(args) == 0 {
-		packagePath = "./"
-	} else {
+	packagePath := "./"
+	if len(args) > 0 {
 		packagePath = os.Args[1]
 	}
 	c, err := NewCoverProfile(packagePath)
@@ -254,7 +251,11 @@ func Main() int {
 		fmt.Println(err)
 		return 1
 	}
-	fmt.Println(c)
+	output := c.String()
+	if output == "" {
+		return 1
+	}
+	fmt.Println(output)
 	err = c.Cleanup()
 	if err != nil {
 		fmt.Println(err)

@@ -1,6 +1,13 @@
 env GOCACHE=$TMPDIR/.cache
 exec deltacoverage
-stdout 'TestSubstractTwoMinusTwo 50.0'
+cmp stdout golden.txt
+
+-- golden.txt --
+TestSubstractTwoMinusTwo 50.0%
+TestSumOnePlusOne 0.0%
+TestSumThreePlusThree 0.0%
+TestSumTwoPlusTwo 0.0%
+TestSumTwoPlusTwoNumberTwo 0.0%
 -- sampletestscript.go --
 package sampletestscript
 
@@ -74,3 +81,4 @@ func TestSubstractTwoMinusTwo(t *testing.T) {
 module sampletestscript
 
 go 1.19
+
