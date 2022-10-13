@@ -55,5 +55,5 @@ Thank you [@bitfield](https://github.com/bitfield) for the suggestion.
 - POC :white_check_mark:
 - Brute force implementation using `go test` commands :white_check_mark:
 - Get same metrics using coverprofiles of each test instead of brute force. It's going to improve performance from O(n2) to O(n):white_check_mark:
-- Borrow `cover.go` code and create `deltagecoverage.go` -> Under analysis
+- Borrow `cover.go` code and create `deltagecoverage.go` -> Abandoned
 - (Dream) Implement as Go CLI feature
