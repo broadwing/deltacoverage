@@ -3,9 +3,7 @@ package deltacoverage_test
 import (
 	"bytes"
 	"errors"
-	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,6 +11,24 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/rogpeppe/go-internal/testscript"
 )
+
+func TestMain(m *testing.M) {
+	os.Exit(testscript.RunMain(m,
+		map[string]func() int{
+			"deltacoverage": deltacoverage.Main,
+		},
+	))
+}
+
+func TestTestScript_(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("Skipping long test")
+	}
+	testscript.Run(t, testscript.Params{
+		Dir: "testdata/scripts",
+	})
+}
 
 func TestNewCoverProfile_ErrorsIfPathDoesNotExist(t *testing.T) {
 	t.Parallel()
@@ -411,6 +427,27 @@ func TestGenerate_ErrorsGivenCodeWithNoTests(t *testing.T) {
 	}
 }
 
+var wants = map[string][]byte{
+	"TestSumOnePlusOne":        []byte("mode: set\ncalc/calc.go:3.24,5.2 1 1\ncalc/calc.go:7.30,9.2 1 0\ncalc/calc.go:11.29,13.2 1 0\n"),
+	"TestSumTwoPlusTwo":        []byte("mode: set\ncalc/calc.go:3.24,5.2 1 1\ncalc/calc.go:7.30,9.2 1 0\ncalc/calc.go:11.29,13.2 1 0\n"),
+	"TestSubstractTwoMinusTwo": []byte("mode: set\ncalc/calc.go:3.24,5.2 1 0\ncalc/calc.go:7.30,9.2 1 1\ncalc/calc.go:11.29,13.2 1 0\n"),
+}
+
+func compareCoverProfile(t *testing.T, dir, testName string) {
+	t.Helper()
+	got, err := os.ReadFile(dir + "/" + testName + ".coverprofile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, ok := wants[testName]
+	if !ok {
+		t.Fatalf("missing key %q in wants map", testName)
+	}
+	if !cmp.Equal(want, got) {
+		t.Error(cmp.Diff(strings.Fields(string(want)), strings.Fields(string(got))))
+	}
+}
+
 func TestGenerate_CreatesExpectedCoverProfilesGivenCodeWithThreeTests(t *testing.T) {
 	t.Parallel()
 	c, err := deltacoverage.NewCoverProfile("testdata/code/threeTests")
@@ -423,28 +460,8 @@ func TestGenerate_CreatesExpectedCoverProfilesGivenCodeWithThreeTests(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	wants := map[string][]byte{
-		"TestSumOnePlusOne":        []byte("mode: set\ncalc/calc.go:3.24,5.2 1 1\ncalc/calc.go:7.30,9.2 1 0\ncalc/calc.go:11.29,13.2 1 0\n"),
-		"TestSumTwoPlusTwo":        []byte("mode: set\ncalc/calc.go:3.24,5.2 1 1\ncalc/calc.go:7.30,9.2 1 0\ncalc/calc.go:11.29,13.2 1 0\n"),
-		"TestSubstractTwoMinusTwo": []byte("mode: set\ncalc/calc.go:3.24,5.2 1 0\ncalc/calc.go:7.30,9.2 1 1\ncalc/calc.go:11.29,13.2 1 0\n"),
-	}
 	for _, testName := range c.Tests {
-		f, err := os.Open(filepath.Join(tempDir, testName+".coverprofile"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		want, ok := wants[testName]
-		if !ok {
-			t.Errorf("missing key %q in wants map", testName)
-			continue
-		}
-		got, err := io.ReadAll(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !cmp.Equal(want, got) {
-			t.Error(cmp.Diff(strings.Fields(string(want)), strings.Fields(string(got))))
-		}
+		compareCoverProfile(t, tempDir, testName)
 	}
 }
 
@@ -481,17 +498,4 @@ func TestCleanup_RemovesOutputPath(t *testing.T) {
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("want os.ErrNotExist but got %#v", err)
 	}
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(testscript.RunMain(m, map[string]func() int{"deltacoverage": deltacoverage.Main}))
-}
-
-func TestTestScript_(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping long test")
-	}
-	testscript.Run(t, testscript.Params{
-		Dir: "testdata/scripts",
-	})
 }

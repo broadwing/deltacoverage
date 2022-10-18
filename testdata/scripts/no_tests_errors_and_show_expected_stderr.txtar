@@ -1,6 +1,7 @@
 env GOCACHE=$TMPDIR/.cache
-exec deltacoverage
+! exec deltacoverage
 stderr 'No tests found\n'
+stdout ''
 -- sampletestscript.go --
 package sampletestscript
 
