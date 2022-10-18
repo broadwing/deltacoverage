@@ -14,15 +14,21 @@ import (
 	"gopkg.in/errgo.v2/errors"
 )
 
-var ErrMustBeDirectory = errors.New("Must be a directory")
-var ErrMustBeFile = errors.New("Must be a file")
+var (
+	// ErrMustBeDirectory is the error for when a file is passed instead of a directory.
+	ErrMustBeDirectory = errors.New("Must be a directory")
+	// ErrMustBeFile is the error for when a directory is passed instead of a file.
+	ErrMustBeFile = errors.New("Must be a file")
+)
 
+// profileItem is a struct to store a line of a cover profile.
 type profileItem struct {
 	Branch     string
 	Statements int
 	Visited    bool
 }
 
+// CoverProfile is a struct to store Go's cover profile state.
 type CoverProfile struct {
 	NumberStatements int
 	OutputPath       string
@@ -49,12 +55,12 @@ func (c CoverProfile) parseProfileLine(line string) (*profileItem, error) {
 	}
 	nrStmt, err := strconv.Atoi(items[1])
 	if err != nil {
-		return &profileItem{}, err
+		return nil, err
 	}
 	profItem.Statements = nrStmt
 	timesVisited, err := strconv.Atoi(items[2])
 	if err != nil {
-		return &profileItem{}, err
+		return nil, err
 	}
 	if timesVisited > 0 {
 		profItem.Visited = true
@@ -145,6 +151,7 @@ func (c *CoverProfile) Parse() error {
 	return nil
 }
 
+// Generate creates a cover profile for each test
 func (c *CoverProfile) Generate() error {
 	err := c.ListTests()
 	if err != nil {
@@ -166,6 +173,7 @@ func (c *CoverProfile) Generate() error {
 	return nil
 }
 
+// ListTests set package tests in CoverProfile
 func (c *CoverProfile) ListTests() error {
 	goArgs := []string{"test", "-list", "."}
 	cmd := exec.Command("go", goArgs...)
@@ -188,10 +196,12 @@ func (c *CoverProfile) ListTests() error {
 	return nil
 }
 
+// Cleanup delete the OutputPath directory
 func (c *CoverProfile) Cleanup() error {
 	return os.RemoveAll(c.OutputPath)
 }
 
+// NewCoverProfile initializes and returns a pointer to CoverProfile
 func NewCoverProfile(codePath string) (*CoverProfile, error) {
 	info, err := os.Stat(codePath)
 	if err != nil {
@@ -215,6 +225,8 @@ func NewCoverProfile(codePath string) (*CoverProfile, error) {
 	return c, nil
 }
 
+// parseListTests parses the reader and returns a slice containing all strings
+// started with "Test"
 func parseListTests(r io.Reader) ([]string, error) {
 	scanner := bufio.NewScanner(r)
 	testsNames := []string{}
@@ -230,6 +242,8 @@ func parseListTests(r io.Reader) ([]string, error) {
 	return testsNames, nil
 }
 
+// Main is the entrypoint for the CLI. It puts all functions together and return
+// the CLI exit code
 func Main() int {
 	args := os.Args[1:]
 	packagePath := "./"
